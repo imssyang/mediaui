@@ -1,0 +1,43 @@
+{
+  "name": "@imssyang/mediaui",
+  "version": "1.0.0",
+  "description": "A tool to compare two video or image based on frame by frame by browser.",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "build": "NODE_ENV=production rollup -c",
+    "build:dev": "NODE_ENV=development rollup -c",
+    "serve": "NODE_ENV=server rollup -c -w",
+    "test": "tree -h dist"
+  },
+  "homepage": "https://github.com/imssyang/mediaui/blob/main/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imssyang/mediaui.git"
+  },
+  "author": "imssyang <imssyang@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 18.0.0",
+    "npm": ">= 9.0.0",
+    "yarn": "please use npm"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "prettier": "^3.2.5",
+    "rollup": "^4.14.2",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-livereload": "^2.0.5",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-serve": "^3.0.0"
+  },
+  "dependencies": {
+    "video.js": "^8.20.0",
+    "pixi.js": "^8.6.1"
+  }
+}
