@@ -4,10 +4,9 @@ const log = msg => {
     document.getElementById('logs').innerHTML += msg + '<br>'
 }
 
-class WebRTCSettings {
-    static url = {
-        prefix: null
-    }
+let WebRTCSettings = {
+    urlPrefix: null,
+    iceServerURLs: [],
 }
 
 class WebRTC {
@@ -78,7 +77,6 @@ class WebRTC {
             iceServerURLs: [],
             description: base64,
         })
-        //console.log('body', body)
         fetch(url, {
             method: 'POST',
             headers: {
@@ -94,14 +92,14 @@ class WebRTC {
             }
         })
         .then(data => {
-            console.log('response', data)
+            //console.log('response', data)
             const rDesc = JSON.parse(atob(data.description))
-            //this.setRemoteDesc(data)
+            this.setRemoteDesc(rDesc)
             console.log("remoteDesc:", rDesc);
-            const { type, sdp } = rDesc;
-            const remoteDesc = new RTCSessionDescription({ type, sdp });
-            this.peerConnection.setRemoteDescription(remoteDesc)
-            console.log("remoteDesc:", remoteDesc, this.peerConnection.remoteDescription);
+            //const { type, sdp } = rDesc;
+            //const remoteDesc = new RTCSessionDescription({ type, sdp });
+            //this.peerConnection.setRemoteDescription(remoteDesc)
+            //console.log("remoteDesc:", remoteDesc, this.peerConnection.remoteDescription);
         })
         .catch(error => {
             console.error(error)

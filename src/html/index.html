@@ -8,7 +8,12 @@
   <script type="module">
     import { InitUI } from '/index.js'
     InitUI({
-      iceServerURL: 'stun:stun.l.google.com:19302'
+      webrtc: {
+        urlGroup: 'media',
+        iceServerURLs: [
+          'stun:stun.l.google.com:19302',
+        ]
+      }
     })
   </script>
   <div id="videos"></div>
