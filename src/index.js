@@ -3,14 +3,19 @@ import { WebRTC, WebRTCSettings } from './webrtc';
 import './css/ui.css'
 
 function setOptions(options) {
-    if (options?.urlGroup)
-        WebRTCSettings.urlGroup = options.urlGroup
+    if (options?.webrtc) {
+        const webrtc = options.webrtc
+        if (webrtc?.urlGroup)
+            WebRTCSettings.urlGroup = webrtc.urlGroup
+        if (webrtc?.iceServerURLs)
+            WebRTCSettings.iceServerURLs = webrtc.iceServerURLs
+    }
 }
 
 function InitUI(options) {
     console.log('MediaUI version: ' + version);
     setOptions(options)
-    new WebRTC().createOffer()
+    new WebRTC()
 }
 
 export { InitUI }
