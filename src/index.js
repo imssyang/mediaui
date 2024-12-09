@@ -3,8 +3,8 @@ import { WebRTC, WebRTCSettings } from './webrtc';
 import './css/ui.css'
 
 function setOptions(options) {
-    if (options?.urlPrefix)
-        WebRTCSettings.urlPrefix = options.url.prefix
+    if (options?.urlGroup)
+        WebRTCSettings.urlGroup = options.urlGroup
 }
 
 function InitUI(options) {
