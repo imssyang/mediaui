@@ -22,31 +22,12 @@ class WebRTCConnection {
         }
         return conf
     }
-    startfetchCandidates() {
-        const timeout = 10000
-        if (!this.fetchCandidatesTimer) {
-            this.fetchCandidatesTimer = setInterval(() => {
-                const url = this.url('candidate', {
-                    connid: this.connID
-                })
-                this.request('GET', url, {
-                    timeout: timeout,
-                })
-            }, 50);
-            setTimeout(() => this.stopFetchCandidates, timeout);
-        }
-    }
-    stopFetchCandidates = () => {
-        if (this.fetchCandidatesTimer) {
-            clearInterval(this.fetchCandidatesTimer);
-        }
-    }
     oniceconnectionstatechange(_event) {
         console.log('oniceconnectionstatechange', this.connection.iceConnectionState)
         document.getElementById('logs').innerHTML += this.connection.iceConnectionState + '<br>'
         const state = this.connection.iceConnectionState
         if (state == "checking") {
-            this.startfetchCandidates()
+            this.startFetchCandidates()
         } else if (["closed", "completed", "connected", "disconnected", "failed"].includes(state)) {
             this.stopFetchCandidates()
         }
@@ -66,7 +47,7 @@ class WebRTCConnection {
                 body: body,
             })
         } else {
-            this.startfetchCandidates()
+            this.startFetchCandidates()
         }
     }
     ontrack(event) {
@@ -86,19 +67,39 @@ class WebRTCConnection {
             console.log('remoteDescription', desc);
         } else if (http.url.includes('webrtc/candidate')) {
             if (http.ok) {
-                if (method == 'GET') {
-                    if (rsp.iceCandidates) {
-                        for (const candidate of rsp.iceCandidates) {
-                            console.log('webrtc/addIceCandidate', candidate)
-                            this.connection.addIceCandidate(candidate).catch(error => {
-                                console.error(error)
-                            })
-                        }
+                if (rsp.iceCandidates) {
+                    for (const candidate of rsp.iceCandidates) {
+                        console.log('webrtc/addIceCandidate', candidate)
+                        this.connection.addIceCandidate(candidate).catch(error => {
+                            console.error(error)
+                        })
                     }
+                }
+                if (rsp.iceGatheringState == 'complete') {
+                    this.stopFetchCandidates()
                 }
             } else {
                 console.error('webrtc/candidate', method, rsp)
             }
+        }
+    }
+    startFetchCandidates() {
+        const timeout = 10000
+        if (!this.fetchCandidatesTimer) {
+            this.fetchCandidatesTimer = setInterval(() => {
+                const url = this.url('candidate', {
+                    connid: this.connID
+                })
+                this.request('GET', url, {
+                    timeout: timeout,
+                })
+            }, 50);
+            setTimeout(() => this.stopFetchCandidates, timeout);
+        }
+    }
+    stopFetchCandidates = () => {
+        if (this.fetchCandidatesTimer) {
+            clearInterval(this.fetchCandidatesTimer);
         }
     }
     offer(hasVideo, hasAudio) {
