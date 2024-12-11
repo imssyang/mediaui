@@ -1,3 +1,4 @@
+import { log } from './log.js';
 
 let WebRTCSettings = {
     urlGroup: null,
@@ -23,7 +24,7 @@ class WebRTCConnection {
         return conf
     }
     oniceconnectionstatechange(_event) {
-        console.log('oniceconnectionstatechange', this.connection.iceConnectionState)
+        log.webrtc.info('oniceconnectionstatechange', this.connection.iceConnectionState)
         document.getElementById('logs').innerHTML += this.connection.iceConnectionState + '<br>'
         const state = this.connection.iceConnectionState
         if (state == "checking") {
@@ -33,7 +34,7 @@ class WebRTCConnection {
         }
     }
     onicecandidate(event) {
-        console.log('onicecandidate', event.candidate)
+        log.webrtc.info('onicecandidate', event.candidate)
         if (event.candidate !== null) {
             const url = this.url('candidate', {
                 connid: this.connID
@@ -46,12 +47,10 @@ class WebRTCConnection {
             this.request('POST', url, {
                 body: body,
             })
-        } else {
-            this.startFetchCandidates()
         }
     }
     ontrack(event) {
-        console.log('ontrack', event)
+        log.webrtc.info('ontrack', event)
         const trackEl = document.createElement(event.track.kind)
         trackEl.srcObject = event.streams[0]
         trackEl.autoplay = true
@@ -62,17 +61,17 @@ class WebRTCConnection {
         if (http.url.includes('webrtc/offer')) {
             const desc = JSON.parse(atob(rsp.description))
             this.connection.setRemoteDescription(desc).catch(error => {
-                console.error(error)
+                log.webrtc.error(error)
             })
-            console.log('remoteDescription', desc);
+            log.webrtc.info('remoteDescription', desc);
         } else if (http.url.includes('webrtc/candidate')) {
-            console.log('onresponse', http, req, rsp)
+            log.webrtc.info('onresponse', http, req, rsp)
             if (http.ok) {
                 if (rsp.iceCandidates) {
                     for (const candidate of rsp.iceCandidates) {
-                        console.log('webrtc/addIceCandidate', candidate)
+                        log.webrtc.info('webrtc/addIceCandidate', new Date(Date.now()).toISOString(), candidate)
                         this.connection.addIceCandidate(candidate).catch(error => {
-                            console.error(error)
+                            log.webrtc.error(error)
                         })
                     }
                     if (rsp.iceGatheringState == 'complete') {
@@ -80,7 +79,7 @@ class WebRTCConnection {
                     }
                 }
             } else {
-                console.error('webrtc/candidate', method, rsp)
+                log.webrtc.error('webrtc/candidate', method, rsp)
             }
         }
     }
@@ -88,7 +87,7 @@ class WebRTCConnection {
         const timeout = 10000
         if (!this.fetchCandidatesTimer) {
             this.fetchCandidatesTimer = setInterval(() => {
-                console.log('start fetchCandidatesTimer', this.connID)
+                log.webrtc.info('start fetchCandidatesTimer', new Date(Date.now()).toISOString(), this.connID)
                 const url = this.url('candidate', {
                     connid: this.connID
                 })
@@ -102,7 +101,8 @@ class WebRTCConnection {
     stopFetchCandidates = () => {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
-            console.log('stop fetchCandidatesTimer')
+            this.fetchCandidatesTimer = null
+            log.webrtc.info('stop fetchCandidatesTimer', new Date(Date.now()).toISOString())
         }
     }
     offer(hasVideo, hasAudio) {
@@ -128,12 +128,12 @@ class WebRTCConnection {
                 iceServerURLs: WebRTCSettings.iceServerURLs,
                 description: btoa(JSON.stringify(desc)),
             }
-            console.log('localDescription', desc);
+            log.webrtc.info('localDescription', desc);
             this.request('POST', url, {
                 body: body,
             })
         }).catch(error => {
-            console.error(error)
+            log.webrtc.error(error)
         })
     }
     url(name, params) {

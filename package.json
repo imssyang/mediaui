@@ -37,7 +37,8 @@
     "rollup-plugin-serve": "^3.0.0"
   },
   "dependencies": {
-    "video.js": "^8.20.0",
-    "pixi.js": "^8.6.1"
+    "consola": "^3.2.3",
+    "pixi.js": "^8.6.1",
+    "video.js": "^8.20.0"
   }
 }
