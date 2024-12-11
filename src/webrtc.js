@@ -66,6 +66,7 @@ class WebRTCConnection {
             })
             console.log('remoteDescription', desc);
         } else if (http.url.includes('webrtc/candidate')) {
+            console.log('onresponse', http, req, rsp)
             if (http.ok) {
                 if (rsp.iceCandidates) {
                     for (const candidate of rsp.iceCandidates) {
@@ -74,9 +75,9 @@ class WebRTCConnection {
                             console.error(error)
                         })
                     }
-                }
-                if (rsp.iceGatheringState == 'complete') {
-                    this.stopFetchCandidates()
+                    if (rsp.iceGatheringState == 'complete') {
+                        this.stopFetchCandidates()
+                    }
                 }
             } else {
                 console.error('webrtc/candidate', method, rsp)
@@ -87,19 +88,21 @@ class WebRTCConnection {
         const timeout = 10000
         if (!this.fetchCandidatesTimer) {
             this.fetchCandidatesTimer = setInterval(() => {
+                console.log('start fetchCandidatesTimer', this.connID)
                 const url = this.url('candidate', {
                     connid: this.connID
                 })
                 this.request('GET', url, {
                     timeout: timeout,
                 })
-            }, 50);
+            }, 1000);
             setTimeout(() => this.stopFetchCandidates, timeout);
         }
     }
     stopFetchCandidates = () => {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
+            console.log('stop fetchCandidatesTimer')
         }
     }
     offer(hasVideo, hasAudio) {
