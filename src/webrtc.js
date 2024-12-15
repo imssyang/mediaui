@@ -123,6 +123,10 @@ class WebRTCConnection {
                 connid: this.connID
             })
             const body = {
+                streamURLs: [
+                    '/opt/app/gweb/tests/play-from-disk/output.ivf',
+                    '/opt/app/gweb/tests/play-from-disk/output.ogg',
+                ],
                 preferNetwork: 'udp',
                 peerBindPort: false,
                 iceServerURLs: WebRTCSettings.iceServerURLs,
