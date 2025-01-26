@@ -29,7 +29,7 @@ const PATHS = {
 const FILES = {
   src: {
     img: [
-      { name: 'mediaui.svg', to: 'img', when: [ 'serve' ] },
+      { name: 'mediaui.svg', to: 'img', when: [ 'prod', 'serve' ] },
     ],
     html: [
       { name: 'index.html', when: [ 'serve' ] },
@@ -72,8 +72,9 @@ const FILES = {
     let items = []
     for (const [dir, files] of Object.entries(this.src)) {
       for (const file of files) {
+        const okProd = isProd && file.when.includes('prod')
         const okServe = isServe && file.when.includes('serve')
-        if (okServe) {
+        if (okProd || okServe) {
           const src = path.join(PATHS.src, dir, file.name)
           if (this.checkPath(src)) {
             const dest = path.join(...[PATHS.dist, file?.to].filter(Boolean))
