@@ -13,6 +13,7 @@ class WebRTCConnection {
         this.connection.onicecandidate = (event) => this.onicecandidate(event)
         this.connection.ontrack = (event) => this.ontrack(event)
         this.fetchCandidatesTimer = null
+        this.fetchCandidatesDisable = false
     }
     get config() {
         let conf = {}
@@ -69,7 +70,7 @@ class WebRTCConnection {
             if (http.ok) {
                 if (rsp.iceCandidates) {
                     for (const candidate of rsp.iceCandidates) {
-                        log.webrtc.info('webrtc/addIceCandidate', new Date(Date.now()).toISOString(), candidate)
+                        log.webrtc.info('webrtc/addIceCandidate', candidate)
                         this.connection.addIceCandidate(candidate).catch(error => {
                             log.webrtc.error(error)
                         })
@@ -81,19 +82,27 @@ class WebRTCConnection {
             } else {
                 log.webrtc.error('webrtc/candidate', method, rsp)
             }
+            if (method == "GET") {
+                if (this.fetchCandidatesTimer) {
+                    this.fetchCandidatesDisable = false
+                }
+            }
         }
     }
     startFetchCandidates() {
         const timeout = 10000
         if (!this.fetchCandidatesTimer) {
+            log.webrtc.info('start fetchCandidatesTimer', this.connID)
             this.fetchCandidatesTimer = setInterval(() => {
-                log.webrtc.info('start fetchCandidatesTimer', new Date(Date.now()).toISOString(), this.connID)
-                const url = this.url('candidate', {
-                    connid: this.connID
-                })
-                this.request('GET', url, {
-                    timeout: timeout,
-                })
+                if (!this.fetchCandidatesDisable) {
+                    const url = this.url('candidate', {
+                        connid: this.connID
+                    })
+                    this.request('GET', url, {
+                        timeout: timeout,
+                    })
+                    this.fetchCandidatesDisable = true
+                }
             }, 1000);
             setTimeout(() => this.stopFetchCandidates, timeout);
         }
@@ -102,7 +111,7 @@ class WebRTCConnection {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
             this.fetchCandidatesTimer = null
-            log.webrtc.info('stop fetchCandidatesTimer', new Date(Date.now()).toISOString())
+            log.webrtc.info('stop fetchCandidatesTimer', this.connID)
         }
     }
     offer(hasVideo, hasAudio) {
