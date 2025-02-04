@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { version } from '../package.json'
 import { log } from '@utils/log'
-import { createWebRTC } from '@webrtc/webrtc'
+//import { createWebRTC } from '@webrtc/webrtc'
 import App from './App.tsx'
 import './index.css'
 
@@ -17,7 +17,7 @@ function MediaUI(options: any) {
     </StrictMode>,
   )
 
-  createWebRTC(options?.webrtc)
+  //createWebRTC(options?.webrtc)
 }
 
 export default MediaUI

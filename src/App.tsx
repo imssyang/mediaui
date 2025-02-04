@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { GridStackDemo } from "./demo/demo"
 import reactLogo from './assets/react.svg'
 import './App.css'
 
@@ -23,6 +24,10 @@ function App() {
       </p>
       <div id="videos"></div>
       <div id="logs"></div>
+
+      <h1>Gridstack React Wrapper Demo</h1>
+      <h3>(Uncontrolled)</h3>
+      <GridStackDemo />
     </>
   )
 }
