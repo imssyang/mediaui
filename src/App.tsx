@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { GridStackDemo } from "./demo/demo"
+import { ReflexDemo } from './demo/reflex'
 import reactLogo from './assets/react.svg'
 import './App.css'
 
@@ -27,6 +28,7 @@ function App() {
 
       <h1>Gridstack React Wrapper Demo</h1>
       <h3>(Uncontrolled)</h3>
+      <ReflexDemo />
       <GridStackDemo />
     </>
   )
