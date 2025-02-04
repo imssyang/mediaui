@@ -1,4 +1,4 @@
-import { log } from './log.js';
+import { log } from '@utils/log.ts'
 
 let WebRTCSettings = {
     urlGroup: null,
@@ -25,7 +25,7 @@ class WebRTCConnection {
         return conf
     }
     oniceconnectionstatechange(_event) {
-        log.webrtc.info('oniceconnectionstatechange', this.connection.iceConnectionState)
+        log.webrtc('oniceconnectionstatechange', this.connection.iceConnectionState)
         document.getElementById('logs').innerHTML += this.connection.iceConnectionState + '<br>'
         const state = this.connection.iceConnectionState
         if (state == "checking") {
@@ -35,7 +35,7 @@ class WebRTCConnection {
         }
     }
     onicecandidate(event) {
-        log.webrtc.info('onicecandidate', event.candidate)
+        log.webrtc('onicecandidate', event.candidate)
         if (event.candidate !== null) {
             const url = this.url('candidate', {
                 connid: this.connID
@@ -51,7 +51,7 @@ class WebRTCConnection {
         }
     }
     ontrack(event) {
-        log.webrtc.info('ontrack', event)
+        log.webrtc('ontrack', event)
         const trackEl = document.createElement(event.track.kind)
         trackEl.srcObject = event.streams[0]
         trackEl.autoplay = true
@@ -62,17 +62,17 @@ class WebRTCConnection {
         if (http.url.includes('webrtc/offer')) {
             const desc = JSON.parse(atob(rsp.description))
             this.connection.setRemoteDescription(desc).catch(error => {
-                log.webrtc.error(error)
+                log.webrtc(error)
             })
-            log.webrtc.info('remoteDescription', desc);
+            log.webrtc('remoteDescription', desc);
         } else if (http.url.includes('webrtc/candidate')) {
-            log.webrtc.info('onresponse', http, req, rsp)
+            log.webrtc('onresponse', http, req, rsp)
             if (http.ok) {
                 if (rsp.iceCandidates) {
                     for (const candidate of rsp.iceCandidates) {
-                        log.webrtc.info('webrtc/addIceCandidate', candidate)
+                        log.webrtc('webrtc/addIceCandidate', candidate)
                         this.connection.addIceCandidate(candidate).catch(error => {
-                            log.webrtc.error(error)
+                            log.webrtc(error)
                         })
                     }
                     if (rsp.iceGatheringState == 'complete') {
@@ -80,7 +80,7 @@ class WebRTCConnection {
                     }
                 }
             } else {
-                log.webrtc.error('webrtc/candidate', method, rsp)
+                log.webrtc('webrtc/candidate', method, rsp)
             }
             if (method == "GET") {
                 if (this.fetchCandidatesTimer) {
@@ -92,7 +92,7 @@ class WebRTCConnection {
     startFetchCandidates() {
         const timeout = 10000
         if (!this.fetchCandidatesTimer) {
-            log.webrtc.info('start fetchCandidatesTimer', this.connID)
+            log.webrtc('start fetchCandidatesTimer', this.connID)
             this.fetchCandidatesTimer = setInterval(() => {
                 if (!this.fetchCandidatesDisable) {
                     const url = this.url('candidate', {
@@ -111,7 +111,7 @@ class WebRTCConnection {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
             this.fetchCandidatesTimer = null
-            log.webrtc.info('stop fetchCandidatesTimer', this.connID)
+            log.webrtc('stop fetchCandidatesTimer', this.connID)
         }
     }
     offer(hasVideo, hasAudio) {
@@ -141,12 +141,12 @@ class WebRTCConnection {
                 iceServerURLs: WebRTCSettings.iceServerURLs,
                 description: btoa(JSON.stringify(desc)),
             }
-            log.webrtc.info('localDescription', desc);
+            log.webrtc('localDescription', desc);
             this.request('POST', url, {
                 body: body,
             })
         }).catch(error => {
-            log.webrtc.error(error)
+            log.webrtc(error)
         })
     }
     url(name, params) {

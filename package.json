@@ -4,11 +4,23 @@
   "description": "A tool to compare two video or image based on frame by frame by browser.",
   "private": false,
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/mediaui.umd.cjs",
+  "module": "./dist/mediaui.js",
+  "exports": {
+    ".": {
+      "import": "./dist/mediaui.js",
+      "require": "./dist/mediaui.umd.cjs"
+    },
+    "./style.css": "./dist/mediaui.css"
+  },
   "scripts": {
-    "build": "NODE_ENV=production rollup -c",
-    "build:dev": "NODE_ENV=development rollup -c",
-    "serve": "NODE_ENV=server rollup -c -w",
-    "test": "tree -h dist"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "homepage": "https://github.com/imssyang/mediaui/blob/main/README.md",
   "repository": {
@@ -19,26 +31,25 @@
   "license": "MIT",
   "engines": {
     "node": ">= 18.0.0",
-    "npm": ">= 9.0.0",
-    "yarn": "please use npm"
-  },
-  "devDependencies": {
-    "@rollup/plugin-alias": "^5.1.0",
-    "@rollup/plugin-commonjs": "^26.0.1",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "prettier": "^3.2.5",
-    "rollup": "^4.14.2",
-    "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-livereload": "^2.0.5",
-    "rollup-plugin-postcss": "^4.0.2",
-    "rollup-plugin-serve": "^3.0.0"
+    "pnpm": ">= 9.0.0",
+    "yarn": "please use pnpm"
   },
   "dependencies": {
-    "consola": "^3.2.3",
-    "pixi.js": "^8.6.1",
-    "video.js": "^8.20.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.13.1",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "eslint": "^9.19.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.11"
   }
 }
