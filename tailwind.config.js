@@ -1,0 +1,1 @@
+// ignore at https://v3.tailwindcss.com/docs/v4-beta#css-first-configuration

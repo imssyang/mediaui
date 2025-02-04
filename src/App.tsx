@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { GridStackDemo } from "./demo/demo"
 import { ReflexDemo } from './demo/reflex'
+import { ThemeProvider } from "@/components/theme-provider"
+import { Button } from "@/components/ui/button"
 import reactLogo from './assets/react.svg'
 import './App.css'
 
@@ -8,7 +10,8 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Button>Button</Button>
       <div>
         <a href="https://react.dev" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />
@@ -30,7 +33,7 @@ function App() {
       <h3>(Uncontrolled)</h3>
       <ReflexDemo />
       <GridStackDemo />
-    </>
+    </ThemeProvider>
   )
 }
 

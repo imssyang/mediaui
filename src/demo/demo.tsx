@@ -7,7 +7,7 @@ import {
   GridStackRender,
   GridStackRenderProvider,
   useGridStackContext,
-} from "@components/gridstack";
+} from "@/components/gridstack";
 
 import "gridstack/dist/gridstack-extra.css";
 import "gridstack/dist/gridstack.css";
