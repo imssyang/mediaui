@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { version } from '../package.json'
-import { log } from '@/utils/log'
+import { log } from '@/lib/log'
 //import { createWebRTC } from '@/webrtc/webrtc'
-import App from '@/App.tsx'
-import '@/index.css'
+import App from './App.tsx'
+import './index.css'
 
 function MediaUI(options: any) {
   log.json('MediaUI', {version, options})
