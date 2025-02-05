@@ -1,6 +1,5 @@
 // @ts-ignore
 import { WebRTC, WebRTCSettings } from './internal.js';
-import './webrtc.css'
 
 export function createWebRTC(options: any) {
   if (options?.urlGroup)

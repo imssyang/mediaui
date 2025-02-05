@@ -8,26 +8,14 @@ function App() {
 
   return (
     <>
-      <Demo />
-      <div>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+      <img src={reactLogo} className="logo react" alt="React logo" />
       <h1>MediaUI</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <button onClick={() => setCount((count) => count + 1)}>
+        count is {count}
+      </button>
       <div id="videos"></div>
       <div id="logs"></div>
-
-      <h1>Gridstack React Wrapper Demo</h1>
-      <h3>(Uncontrolled)</h3>
+      <Demo />
     </>
   )
 }

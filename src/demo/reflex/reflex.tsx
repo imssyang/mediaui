@@ -10,12 +10,10 @@ import 'react-reflex/styles.css'
 import './reflex.css'
 
 export class ReflexDemo extends React.Component {
-
-
   render () {
-
     return (
-      <ReflexContainer orientation="vertical">
+      <>
+        <ReflexContainer orientation="vertical">
 
         <ReflexElement className="left-pane">
           <div className="pane-content">
@@ -40,7 +38,8 @@ export class ReflexDemo extends React.Component {
           </div>
         </ReflexElement>
 
-      </ReflexContainer>
+        </ReflexContainer>
+      </>
     )
   }
 }
