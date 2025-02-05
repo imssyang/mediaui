@@ -1,9 +1,11 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import { ModeToggle } from "@/components/mode-toggle"
-import { ButtonDemo } from "@/demo/ui/button"
-import { CheckboxDemo } from "@/demo/ui/checkbox"
-import { LabelDemo } from "@/demo/ui/label"
-import { SwitchDemo } from "@/demo/ui/switch"
+import { ButtonDemo } from "./button"
+import { CheckboxDemo } from "./checkbox"
+import { CollapsibleDemo } from "./collapsible"
+import { LabelDemo } from "./label"
+import { SwitchDemo } from "./switch"
+import { FormDemo } from "./form"
 
 export function UIDemo() {
   return (
@@ -11,8 +13,10 @@ export function UIDemo() {
       <ModeToggle />
       <ButtonDemo />
       <CheckboxDemo />
+      <CollapsibleDemo />
       <LabelDemo />
       <SwitchDemo />
+      <FormDemo />
     </ThemeProvider>
   )
 }
