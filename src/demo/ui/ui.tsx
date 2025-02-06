@@ -6,6 +6,7 @@ import { CollapsibleDemo } from "./collapsible"
 import { LabelDemo } from "./label"
 import { SwitchDemo } from "./switch"
 import { FormDemo } from "./form"
+import { DynamicInput } from "./dynamic-input"
 
 export function UIDemo() {
   return (
@@ -17,6 +18,7 @@ export function UIDemo() {
       <LabelDemo />
       <SwitchDemo />
       <FormDemo />
+      <DynamicInput />
     </ThemeProvider>
   )
 }

@@ -49,6 +49,7 @@
     "clsx": "^2.1.1",
     "gridstack": "^11.3.0",
     "lucide-react": "^0.474.0",
+    "mediasoup-client": "^3.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-fast-compare": "^3.2.2",

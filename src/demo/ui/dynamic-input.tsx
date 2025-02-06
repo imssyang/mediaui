@@ -48,7 +48,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
   )
 }
 
-export function MediaInputs() {
+export function DynamicInput() {
   const [inputs, setInputs] = useState<InputField[]>([
     { value: "", type: "text" },
   ]);
@@ -81,8 +81,8 @@ export function MediaInputs() {
 
   return (
     <>
-      <div id="media-inputs" className="flex items-center gap-2">
-        <Label htmlFor="media-inputs">Media:</Label>
+      <div id="dynamic-inputs" className="flex items-center gap-2">
+        <Label htmlFor="dynamic-inputs">Media:</Label>
         <SelectInput
           input={inputs[0]}
           onInputChange={(e: { target: { value: string; }; }) => handleChange(0, e.target.value)}
