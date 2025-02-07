@@ -1,48 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWebRTCConfig } from "@/webrtc/config";
-import { WebRTCConnection } from "@/webrtc/connection";
+import { useWebRTC } from "@/webrtc/manager";
+import { useWebRTCConnection4 } from "@/webrtc/state";
 
 type MediaPlayerProps = {
   connID: string;
 };
 
 export const MediaPlayer: React.FC<MediaPlayerProps> = ({ connID }) => {
-  const config = useWebRTCConfig();
+  const { connectionState, mediaStream } = useWebRTCConnection4(connID);
+  const webrtc = useWebRTC();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const connectionRef = useRef<WebRTCConnection>(null);
-  const streamRef = useRef(new MediaStream());
   const [isPlaying, setIsPlaying] = useState(false);
   const handleCreateOffer = async () => {
-    await connectionRef.current?.createOffer(true, true);
+    await webrtc.getConnection(connID)?.createOffer(true, true);
     setIsPlaying((prev) => !prev)
   };
 
   useEffect(() => {
-    if (videoRef.current) {
-      console.log('videoRef', streamRef.current)
-      videoRef.current.srcObject = streamRef.current;
+    if (videoRef.current && mediaStream) {
+      console.log('videoRef', mediaStream)
+      videoRef.current.srcObject = mediaStream;
     }
-
-    connectionRef.current = new WebRTCConnection({
-      urlGroup: config.urlGroup,
-      iceServerURLs: config.iceServers[0].urls,
-      connID: connID,
-    })
-
-    connectionRef.current.ontrack = (event) => {
-      console.log('playerTrack', event, streamRef.current)
-      streamRef.current.addTrack(event.track);
-    };
-
-    return () => {
-      if (connectionRef.current) {
-        connectionRef.current.close();
-        connectionRef.current = null;
-      }
-    };
-  }, [config]);
+  }, [mediaStream]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -63,6 +44,7 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ connID }) => {
         {isPlaying ? "暂停" : "播放"}
       </button>
 
+      <p>连接状态: {connectionState}</p>
       <video ref={videoRef} autoPlay playsInline controls className="w-full h-auto" />;
     </div>
   );

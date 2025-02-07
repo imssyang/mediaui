@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { version } from '../package.json'
 import { log } from '@/lib/log'
-import { WebRTCConfigProvider } from "@/webrtc/config";
+import { WebRTCProvider } from "@/webrtc/manager";
 import App from './App.tsx'
 import './index.css'
 
@@ -18,9 +18,9 @@ function MediaUI(options: any) {
   const root = createRoot(domNode!);
   root.render(
     <StrictMode>
-      <WebRTCConfigProvider config={webrtcConfig}>
+      <WebRTCProvider config={webrtcConfig}>
         <App />
-      </WebRTCConfigProvider>
+      </WebRTCProvider>
     </StrictMode>,
   )
 }

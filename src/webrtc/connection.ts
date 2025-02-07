@@ -1,41 +1,40 @@
 import { log } from '@/lib/log';
 
-export interface WebRTCConnectionOptions {
-    urlGroup?: string | null;
-    iceServerURLs: string | string[];
-    connID: string;
-}
-
 export class WebRTCConnection {
-    private options: WebRTCConnectionOptions;
-    private peerConnection: RTCPeerConnection;
+    private urlGroup: string;
+    private iceServers: RTCIceServer[];
+    private connID: string;
     private fetchCandidatesTimer: NodeJS.Timeout | null = null;
     private fetchCandidatesDisable = false;
-    private mediaStream: MediaStream | null = null;
+    public peerConnection: RTCPeerConnection;
+    public mediaStream = new MediaStream();
+    public onIceConnectionStateChange?: (event: Event) => void;
+    public onIceCandidate?: (event: RTCPeerConnectionIceEvent) => void;
+    public onTrack?: (event: RTCTrackEvent) => void;
 
-    ontrack?: (event: RTCTrackEvent) => void;
-
-    constructor(options: WebRTCConnectionOptions) {
-        this.options = options;
-        this.peerConnection = new RTCPeerConnection(this.getConfig());
+    constructor(
+        urlGroup: string,
+        iceServers: RTCIceServer[],
+        connID: string,
+    ) {
+        this.urlGroup = urlGroup;
+        this.iceServers = iceServers;
+        this.connID = connID;
+        this.peerConnection = new RTCPeerConnection({
+            iceServers: this.iceServers ? this.iceServers : [],
+        });
         this.peerConnection.oniceconnectionstatechange = (event) => this.handleIceConnectionStateChange(event);
         this.peerConnection.onicecandidate = (event) => this.handleIceCandidate(event);
         this.peerConnection.ontrack = (event) => this.handleTrack(event);
-        log.webrtc('new', this.options.connID)
+        log.webrtc('new', connID)
     }
 
     public close() {
-        log.webrtc('close', this.options.connID)
+        log.webrtc('close', this.connID)
         return this.peerConnection.close()
     }
 
-    private getConfig(): RTCConfiguration {
-        return {
-            iceServers: this.options.iceServerURLs.length > 0 ? [{ urls: this.options.iceServerURLs }] : [],
-        };
-    }
-
-    private handleIceConnectionStateChange(_event: Event): void {
+    private handleIceConnectionStateChange(event: Event): void {
         log.webrtc('oniceconnectionstatechange', this.peerConnection.iceConnectionState);
         const state = this.peerConnection.iceConnectionState;
         if (state === 'checking') {
@@ -43,35 +42,32 @@ export class WebRTCConnection {
         } else if (["closed", "completed", "connected", "disconnected", "failed"].includes(state)) {
             this.stopFetchCandidates();
         }
+
+        if (this.onIceConnectionStateChange) {
+            this.onIceConnectionStateChange(event);
+        }
     }
 
     private handleIceCandidate(event: RTCPeerConnectionIceEvent): void {
         if (event.candidate) {
             log.webrtc('onicecandidate', event.candidate);
-            const url = this.getUrl('candidate', { connid: this.options.connID });
+            const url = this.getUrl('candidate', { connid: this.connID });
             this.request('POST', url, { body: { iceCandidates: [event.candidate] } });
+        }
+
+        if (this.onIceCandidate) {
+            this.onIceCandidate(event);
         }
     }
 
     private handleTrack(event: RTCTrackEvent): void {
         log.webrtc('handleTrack', event);
-        if (this.ontrack) {
-            this.ontrack(event);
-            return;
-        }
-
-        if (!this.mediaStream) {
-            this.mediaStream = new MediaStream();
-            const trackEl = document.createElement('video');
-            trackEl.srcObject = this.mediaStream;
-            trackEl.autoplay = true;
-            trackEl.playsInline = true;
-            trackEl.controls = true;
-            document.getElementById('videos')?.appendChild(trackEl);
-        }
-
         if (!this.mediaStream.getTracks().some(track => track.id === event.track.id)) {
             this.mediaStream.addTrack(event.track);
+        }
+
+        if (this.onTrack) {
+            this.onTrack(event);
         }
     }
 
@@ -96,10 +92,10 @@ export class WebRTCConnection {
 
     private startFetchCandidates(): void {
         if (!this.fetchCandidatesTimer) {
-            log.webrtc('start fetchCandidatesTimer', this.options.connID);
+            log.webrtc('start fetchCandidatesTimer', this.connID);
             this.fetchCandidatesTimer = setInterval(() => {
                 if (!this.fetchCandidatesDisable) {
-                    const url = this.getUrl('candidate', { connid: this.options.connID });
+                    const url = this.getUrl('candidate', { connid: this.connID });
                     this.request('GET', url, { timeout: 10000 });
                     this.fetchCandidatesDisable = true;
                 }
@@ -112,7 +108,7 @@ export class WebRTCConnection {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
             this.fetchCandidatesTimer = null;
-            log.webrtc('stop fetchCandidatesTimer', this.options.connID);
+            log.webrtc('stop fetchCandidatesTimer', this.connID);
         }
     }
 
@@ -124,7 +120,7 @@ export class WebRTCConnection {
             const desc = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(desc);
 
-            const url = this.getUrl('offer', { connid: this.options.connID });
+            const url = this.getUrl('offer', { connid: this.connID });
             const body = {
                 streamURLs: [
                     '/opt/app/gweb/tests/play-from-disk/output.ivf',
@@ -132,7 +128,7 @@ export class WebRTCConnection {
                 ],
                 preferNetwork: 'udp',
                 peerBindPort: false,
-                iceServerURLs: this.options.iceServerURLs,
+                iceServerURLs: this.iceServers[0].urls,
                 description: btoa(JSON.stringify(desc)),
             };
             this.request('POST', url, { body });
@@ -142,9 +138,8 @@ export class WebRTCConnection {
     }
 
     private getUrl(name: string, params: Record<string, string>): string {
-        const prefix = this.options.urlGroup ? `/${this.options.urlGroup}` : '';
         const searchParams = new URLSearchParams(params).toString();
-        return `${prefix}/webrtc/${name}?${searchParams}`;
+        return `/${this.urlGroup}/webrtc/${name}?${searchParams}`;
     }
 
     private async request(method: string, url: string, options?: { body?: any; timeout?: number }): Promise<void> {
