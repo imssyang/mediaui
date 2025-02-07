@@ -71,7 +71,7 @@ function MenuInput() {
 
   const handleSubmit = () => {
     const urls = input.value
-      .split(",") 
+      .split(",")
       .map((url) => url.trim())
       .filter((url) => url.length > 0);
 
@@ -89,7 +89,7 @@ function MenuInput() {
         id="media-input"
         label="Media:"
         input={input}
-        onInputChange={(e: { target: { value: string }}) => handleChange(e.target.value)}
+        onInputChange={(e: { target: { value: string } }) => handleChange(e.target.value)}
         onSelectChange={(value: string) => handleTypeChange(value)}
       />
       <Button onClick={handleSubmit} size="icon">
@@ -99,12 +99,12 @@ function MenuInput() {
   );
 }
 
-export function MediaMenu() {
+export function MenuPanel() {
   return (
     <div className="flex items-center gap-2">
-        <MenuInput />
-        <Separator orientation="vertical" className="flex h-8 items-center" />
-        <ModeToggle />
+      <MenuInput />
+      <Separator orientation="vertical" className="flex h-8 items-center" />
+      <ModeToggle />
     </div>
   );
 }

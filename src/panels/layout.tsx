@@ -4,11 +4,10 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable"
-import { MediaMenu } from "./menu";
+} from "@/components/ui/resizable";
 import { MediaPlayer } from "./player";
 
-function ResizablePane() {
+export function LayoutPanel() {
   return (
     <ResizablePanelGroup
       direction="vertical"
@@ -29,15 +28,4 @@ function ResizablePane() {
       </ResizablePanel>
     </ResizablePanelGroup>
   )
-}
-
-export function Media() {
-  return (
-    <>
-      <div className="mx-auto p-4 space-y-2">
-        <MediaMenu />
-      </div>
-      <ResizablePane />
-    </>
-  );
 }

@@ -21,9 +21,11 @@ export class WebRTCConnection {
         this.peerConnection.oniceconnectionstatechange = (event) => this.handleIceConnectionStateChange(event);
         this.peerConnection.onicecandidate = (event) => this.handleIceCandidate(event);
         this.peerConnection.ontrack = (event) => this.handleTrack(event);
+        log.webrtc('new', this.options.connID)
     }
 
     public close() {
+        log.webrtc('close', this.options.connID)
         return this.peerConnection.close()
     }
 
@@ -155,9 +157,9 @@ export class WebRTCConnection {
 
             const response = options?.timeout
                 ? await Promise.race([
-                      fetch(url, fetchOpts),
-                      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request Timeout')), options.timeout)),
-                  ])
+                    fetch(url, fetchOpts),
+                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request Timeout')), options.timeout)),
+                ])
                 : await fetch(url, fetchOpts);
 
             if (!response.ok) throw new Error(`RequestError: ${response.status}`);
