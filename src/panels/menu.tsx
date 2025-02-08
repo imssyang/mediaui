@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useWebRTC } from "@/webrtc/context";
 
 type InputField = {
   value: string;
@@ -79,7 +80,9 @@ function MenuInput() {
       return;
     }
 
-    console.log("提交的 URL 列表:", urls);
+    const manager = useWebRTC();
+    const connection = manager.createConnection();
+    console.log("提交的 URL 列表:", urls, connection.connID);
     alert(`提交的数据: ${urls.join("\n")}`);
   };
 

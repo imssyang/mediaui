@@ -3,9 +3,9 @@ import { log } from '@/lib/log';
 export class WebRTCConnection {
     private urlGroup: string;
     private iceServers: RTCIceServer[];
-    private connID: string;
     private fetchCandidatesTimer: NodeJS.Timeout | null = null;
     private fetchCandidatesDisable = false;
+    public connID: string;
     public peerConnection: RTCPeerConnection;
     public mediaStream = new MediaStream();
     public onIceConnectionStateChange?: (event: Event) => void;

@@ -1,9 +1,9 @@
 import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from 'react';
-import { useWebRTC } from './manager';
+import { useWebRTC } from '@/webrtc/context';
 
 interface WebRTCConnectionData {
-    mediaStream: MediaStream | null;
-    connectionState: string | null;
+  mediaStream: MediaStream | null;
+  connectionState: string | null;
 }
 
 export const useWebRTCConnection = (connID: string) => {
@@ -34,42 +34,42 @@ export const useWebRTCConnection = (connID: string) => {
 };
 
 export const useWebRTCConnection3 = (connID: string) => {
-    const webrtcManager = useWebRTC();
-    return {
-        connectionState: webrtcManager.getIceConnectionState(connID),
-        mediaStream: webrtcManager.getMediaStream(connID),
-    }
+  const webrtcManager = useWebRTC();
+  return {
+    connectionState: webrtcManager.getIceConnectionState(connID),
+    mediaStream: webrtcManager.getMediaStream(connID),
+  }
 }
 
 export const useWebRTCConnection2 = (userID: string) => {
-    const webrtcManager = useWebRTC();
+  const webrtcManager = useWebRTC();
 
-    const [state, setState] = useState(() => ({
-      connectionState: webrtcManager.getIceConnectionState(userID),
-      mediaStream: webrtcManager.getMediaStream(userID),
-    }));
+  const [state, setState] = useState(() => ({
+    connectionState: webrtcManager.getIceConnectionState(userID),
+    mediaStream: webrtcManager.getMediaStream(userID),
+  }));
 
-    useEffect(() => {
-      const updateState = () => {
-        setState(prevState => {
-          const newState = {
-            connectionState: webrtcManager.getIceConnectionState(userID),
-            mediaStream: webrtcManager.getMediaStream(userID),
-          };
-          return prevState.connectionState !== newState.connectionState ||
-            prevState.mediaStream !== newState.mediaStream
-            ? newState
-            : prevState;
-        });
-      };
-      const unsubscribe = webrtcManager.subscribe(userID, updateState);
-      return () => {
-        unsubscribe();
-      };
-    }, [userID, webrtcManager]);
+  useEffect(() => {
+    const updateState = () => {
+      setState(prevState => {
+        const newState = {
+          connectionState: webrtcManager.getIceConnectionState(userID),
+          mediaStream: webrtcManager.getMediaStream(userID),
+        };
+        return prevState.connectionState !== newState.connectionState ||
+          prevState.mediaStream !== newState.mediaStream
+          ? newState
+          : prevState;
+      });
+    };
+    const unsubscribe = webrtcManager.subscribe(userID, updateState);
+    return () => {
+      unsubscribe();
+    };
+  }, [userID, webrtcManager]);
 
-    return state;
-  };
+  return state;
+};
 
 
 

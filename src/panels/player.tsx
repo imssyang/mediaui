@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWebRTC } from "@/webrtc/manager";
-import { useWebRTCConnection4 } from "@/webrtc/state";
+import { useWebRTC, useWebRTCState } from "@/webrtc/context";
 
 type MediaPlayerProps = {
   connID: string;
 };
 
 export const MediaPlayer: React.FC<MediaPlayerProps> = ({ connID }) => {
-  const { connectionState, mediaStream } = useWebRTCConnection4(connID);
+  const { connectionState, mediaStream } = useWebRTCState(connID);
   const webrtc = useWebRTC();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
