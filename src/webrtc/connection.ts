@@ -7,10 +7,11 @@ export class WebRTCConnection {
     private fetchCandidatesDisable = false;
     public connID: string;
     public peerConnection: RTCPeerConnection;
-    public mediaStream = new MediaStream();
+    public mediaStream: MediaStream | null = null;
     public onIceConnectionStateChange?: (event: Event) => void;
     public onIceCandidate?: (event: RTCPeerConnectionIceEvent) => void;
     public onTrack?: (event: RTCTrackEvent) => void;
+    public onClose?: () => void;
 
     constructor(
         urlGroup: string,
@@ -31,7 +32,10 @@ export class WebRTCConnection {
 
     public close() {
         log.webrtc('close', this.connID)
-        return this.peerConnection.close()
+        this.peerConnection.close()
+        if (this.onClose) {
+            this.onClose();
+        }
     }
 
     private handleIceConnectionStateChange(event: Event): void {
@@ -62,7 +66,11 @@ export class WebRTCConnection {
 
     private handleTrack(event: RTCTrackEvent): void {
         log.webrtc('handleTrack', event);
-        if (!this.mediaStream.getTracks().some(track => track.id === event.track.id)) {
+        if (!this.mediaStream)
+            this.mediaStream = new MediaStream();
+
+        const tracks = this.mediaStream.getTracks();
+        if (!tracks.some(track => track.id === event.track.id)) {
             this.mediaStream.addTrack(event.track);
         }
 

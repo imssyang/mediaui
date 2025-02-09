@@ -27,8 +27,8 @@ export class WebRTCManager {
     const now = new Date();
     const pad = (num: number, size: number = 2) => num.toString().padStart(size, "0");
     const timestamp = `${now.getFullYear() % 100}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
-      `-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}` +
-      `-${pad(now.getMilliseconds(), 3)}`;
+      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}` +
+      `${pad(now.getMilliseconds(), 3)}`;
     const counter = pad(this.counter, 4);
     return `webrtc${timestamp}${counter}`;
   }
@@ -42,6 +42,7 @@ export class WebRTCManager {
     );
     conn.onIceConnectionStateChange = () => this.notifySubscribers(connID);
     conn.onTrack = () => this.notifySubscribers(connID);
+    conn.onClose = () => this.notifySubscribers(connID);
     this.connections.set(connID, conn);
     return conn;
   }
@@ -85,14 +86,5 @@ export class WebRTCManager {
 
   private notifySubscribers(connID: string): void {
     this.subscribers.get(connID)?.forEach(callback => callback());
-  }
-
-  public getIceConnectionState(connID: string): RTCIceConnectionState {
-    const state = this.connections.get(connID)?.peerConnection.iceConnectionState;
-    return state ?? "new";
-  }
-
-  public getMediaStream(connID: string): MediaStream | null {
-    return this.connections.get(connID)?.mediaStream || null;
   }
 }

@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "lucide-react";
+import { Link, Unlink } from "lucide-react";
+import { log } from "@/lib/log"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast"
 import { useWebRTC } from "@/webrtc/context";
+import { useTask, useDispatch } from "./state";
 
 type InputField = {
   value: string;
   type: string;
+  disabled: boolean;
 };
 
 type SelectInputProps = {
@@ -37,6 +41,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
         id={id}
         type={input.type}
         value={input.value}
+        disabled={input.disabled}
         onChange={onInputChange}
         placeholder="URL"
         className="flex-1"
@@ -44,6 +49,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
       <Select
         value={input.type}
+        disabled={input.disabled}
         onValueChange={onSelectChange}
       >
         <SelectTrigger className="w-10 flex justify-center items-center">
@@ -58,8 +64,12 @@ const SelectInput: React.FC<SelectInputProps> = ({
 }
 
 function MenuInput() {
+  const webrtc = useWebRTC();
+  const task = useTask();
+  const dispatch = useDispatch();
+  const { toast } = useToast();
   const [input, setInput] = useState<InputField>(
-    { value: "", type: "text" }
+    { value: "", type: "text", disabled: false }
   );
 
   const handleChange = (value: string) => {
@@ -67,23 +77,46 @@ function MenuInput() {
   };
 
   const handleTypeChange = (newType: string) => {
-    setInput({ value: "", type: newType });
+    setInput({ ...input, type: newType });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const urls = input.value
       .split(",")
       .map((url) => url.trim())
       .filter((url) => url.length > 0);
 
     if (urls.length === 0) {
+      toast({
+        variant: "destructive",
+        description: "Empty input.",
+      })
       return;
     }
 
-    const manager = useWebRTC();
-    const connection = manager.createConnection();
-    console.log("提交的 URL 列表:", urls, connection.connID);
-    alert(`提交的数据: ${urls.join("\n")}`);
+    if (!input.disabled) {
+      const conn = webrtc.createConnection();
+      await conn.createOffer(true, true);
+
+      dispatch({
+        type: 'addConnection',
+        connID: conn.connID,
+        urls: urls,
+      });
+      log.react('addConnection', conn.connID, urls);
+    } else {
+      if (task.connID.length > 0) {
+        const conn = webrtc.getConnection(task.connID);
+        conn?.close();
+        dispatch({
+          type: 'delConnection',
+          connID: task.connID,
+        });
+        log.react('delConnection', task.connID);
+      }
+    }
+
+    setInput({ ...input, disabled: !input.disabled });
   };
 
   return (
@@ -95,8 +128,12 @@ function MenuInput() {
         onInputChange={(e: { target: { value: string } }) => handleChange(e.target.value)}
         onSelectChange={(value: string) => handleTypeChange(value)}
       />
-      <Button onClick={handleSubmit} size="icon">
-        <Link />
+      <Button
+        variant={input.disabled ? "outline" : "default"}
+        onClick={handleSubmit}
+        size="icon"
+      >
+        {input.disabled ? <Link /> : <Unlink />}
       </Button>
     </>
   );

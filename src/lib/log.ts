@@ -67,13 +67,16 @@ class ConsoleHandler implements ProxyHandler<Console> {
 console = new Proxy(console, new ConsoleHandler());
 
 class Logger {
-  webrtc(...args: any[]) {
-      return console.log(`webrtc${tagSuffix}`, ...args);
-  }
   json(tag: string, ...args: any[]) {
     if (args.length === 1)
         args = args[0];
     return console.log(`${tag}${tagSuffix}`, JSON.stringify(args, null, 2));
+  }
+  react(...args: any[]) {
+      return console.log(`react${tagSuffix}`, ...args);
+  }
+  webrtc(...args: any[]) {
+      return console.log(`webrtc${tagSuffix}`, ...args);
   }
 }
 

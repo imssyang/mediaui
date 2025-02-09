@@ -1,68 +1,21 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+    ReactNode,
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from "react";
 import { WebRTCManager, WebRTCConfig, defaultConfig } from "./manager";
 import { WebRTCConnection } from "./connection";
-
-interface WebRTCState {
-    connectionState: RTCIceConnectionState | null;
-    mediaStream: MediaStream | null;
-}
-
-const getCurrentState = (
-    manager: WebRTCManager,
-    connID: string
-): WebRTCState => ({
-    connectionState: manager.getIceConnectionState(connID),
-    mediaStream: manager.getMediaStream(connID),
-});
-
-const chooseState = (
-    manager: WebRTCManager,
-    connID: string,
-    prevState: WebRTCState
-): WebRTCState => {
-    const newState = getCurrentState(manager, connID);
-    return (prevState.connectionState !== newState.connectionState ||
-        prevState.mediaStream !== newState.mediaStream)
-        ? newState
-        : prevState;
-};
-
-type WebRTCAction =
-    | { type: 'newConnection'; connID: string; urls: string[] }
-    | { type: 'createOffer'; connID: string; urls: string[] }
-    | { type: 'delConnection'; connID: string };
+import { WebRTCState } from "./state";
 
 const WebRTCContext = createContext<WebRTCManager | null>(null);
-const WebRTCDispatchContext = createContext(null);
-
-function WebRTCReducer(manager: WebRTCManager, action: WebRTCAction): WebRTCManager {
-    switch (action.type) {
-        case 'newConnection': {
-            return [
-                ...tasks,
-                {
-                    id: action.id,
-                    text: action.text,
-                    done: false,
-                },
-            ];
-        }
-        case 'createOffer': {
-            return tasks.map((t) =>
-                t.id === action.task.id ? action.task : t
-            );
-        }
-        case 'delConnection': {
-            return tasks.filter((t) => t.id !== action.id);
-        }
-        default: {
-            throw new Error('Unknown action: ' + (action as any).type);
-        }
-    }
-}
 
 type WebRTCProviderProps = {
-    children: React.ReactNode
+    children: ReactNode
     config?: WebRTCConfig
 }
 
@@ -101,14 +54,12 @@ export const useWebRTCConnection = (connID: string): WebRTCConnection | null => 
 
 export const useWebRTCState = (connID: string): WebRTCState => {
     const manager = useWebRTC();
-
-    const [state, setState] = useState<WebRTCState>(() =>
-        getCurrentState(manager, connID)
-    );
+    const [state, setState] = useState(() => new WebRTCState(manager, connID));
 
     useEffect(() => {
         const updateState = () => {
-            setState((prevState) => chooseState(manager, connID, prevState));
+            const newState = new WebRTCState(manager, connID);
+            setState(prevState => prevState.equal(newState) ? prevState : newState);
         };
 
         const unsubscribe = manager.subscribe(connID, updateState);
@@ -118,4 +69,26 @@ export const useWebRTCState = (connID: string): WebRTCState => {
     }, [connID, manager]);
 
     return state;
+};
+
+export const useWebRTCState2 = (connID: string) => {
+    const manager = useWebRTC();
+    const lastRef = useRef(new WebRTCState(manager, connID));
+
+    const subscribe = (callback: () => void) => {
+        return manager.subscribe(connID, callback);
+    };
+
+    const getSnapshot = () => {
+        const newState = new WebRTCState(manager, connID);
+
+        if (lastRef.current.equal(newState)) {
+            return lastRef.current;
+        }
+
+        lastRef.current = newState;
+        return lastRef.current;
+    };
+
+    return useSyncExternalStore(subscribe, getSnapshot);
 };
