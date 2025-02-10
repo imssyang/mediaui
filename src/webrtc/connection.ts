@@ -3,13 +3,14 @@ import { log } from '@/lib/log';
 export class WebRTCConnection {
     private urlGroup: string;
     private iceServers: RTCIceServer[];
-    private fetchCandidatesTimer: NodeJS.Timeout | null = null;
+    private fetchCandidatesTimer: NodeJS.Timeout | undefined;
     private fetchCandidatesDisable = false;
     public connID: string;
     public peerConnection: RTCPeerConnection;
-    public mediaStream: MediaStream | null = null;
-    public mediaSource: MediaSource | null = null;
-    public sourceBuffer: SourceBuffer | null = null;
+    public mediaStream: MediaStream | undefined;
+    public mediaRecorder: MediaRecorder | undefined;
+    public mediaSource: MediaSource | undefined;
+    public sourceBuffer: SourceBuffer | undefined;
     public onIceConnectionStateChange?: (event: Event) => void;
     public onIceCandidate?: (event: RTCPeerConnectionIceEvent) => void;
     public onTrack?: (event: RTCTrackEvent) => void;
@@ -26,10 +27,35 @@ export class WebRTCConnection {
         this.peerConnection = new RTCPeerConnection({
             iceServers: this.iceServers ? this.iceServers : [],
         });
-        this.peerConnection.oniceconnectionstatechange = (event) => this.handleIceConnectionStateChange(event);
-        this.peerConnection.onicecandidate = (event) => this.handleIceCandidate(event);
-        this.peerConnection.ontrack = (event) => this.handleTrack(event);
+        this.peerConnection.oniceconnectionstatechange = async (event) => await this.handleIceConnectionStateChange(event);
+        this.peerConnection.onicecandidate = async (event) => await this.handleIceCandidate(event);
+        this.peerConnection.ontrack = async (event) => await this.handleTrack(event);
         log.webrtc('new', connID)
+    }
+
+    public async createOffer(hasVideo: boolean, hasAudio: boolean): Promise<void> {
+        if (hasVideo) this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        if (hasAudio) this.peerConnection.addTransceiver('audio', { direction: 'recvonly' });
+
+        try {
+            const desc = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(desc);
+
+            const url = this.getUrl('offer', { connid: this.connID });
+            const body = {
+                streamURLs: [
+                    '/opt/app/gweb/tests/play-from-disk/output.ivf',
+                    '/opt/app/gweb/tests/play-from-disk/output.ogg',
+                ],
+                preferNetwork: 'udp',
+                peerBindPort: false,
+                iceServerURLs: this.iceServers[0].urls,
+                description: btoa(JSON.stringify(desc)),
+            };
+            this.request('POST', url, { body });
+        } catch (error) {
+            log.webrtc(error);
+        }
     }
 
     public close() {
@@ -40,23 +66,18 @@ export class WebRTCConnection {
         }
     }
 
-    private handleIceConnectionStateChange(event: Event): void {
-        log.webrtc('oniceconnectionstatechange', this.peerConnection.iceConnectionState);
+    private async handleIceConnectionStateChange(event: Event) {
+        log.webrtc('handleIceConnectionStateChange', this.peerConnection.iceConnectionState);
+        const stats = await this.peerConnection.getStats();
+        stats.forEach(report => {
+            console.log("handleIceConnectionStateChange", this.peerConnection.iceConnectionState, report);
+        });
+
         const state = this.peerConnection.iceConnectionState;
         if (state === 'checking') {
             this.startFetchCandidates();
         } else if (["closed", "completed", "connected", "disconnected", "failed"].includes(state)) {
             this.stopFetchCandidates();
-            if (state == "connected") {
-                this.peerConnection.getStats(null).then(stats => {
-                    stats.forEach(report => {
-                        console.log("实际使用的 report:", report);
-                        if (report.type === "inbound-rtp" && report.kind === "video") {
-                            console.log("实际使用的 codec:", report.codecId, report);
-                        }
-                    });
-                });
-            }
         }
 
         if (this.onIceConnectionStateChange) {
@@ -64,7 +85,12 @@ export class WebRTCConnection {
         }
     }
 
-    private handleIceCandidate(event: RTCPeerConnectionIceEvent): void {
+    private async handleIceCandidate(event: RTCPeerConnectionIceEvent) {
+        const stats = await this.peerConnection.getStats();
+        stats.forEach(report => {
+            console.log("handleIceCandidate:", report);
+        });
+
         if (event.candidate) {
             log.webrtc('onicecandidate', event.candidate);
             const url = this.getUrl('candidate', { connid: this.connID });
@@ -76,68 +102,23 @@ export class WebRTCConnection {
         }
     }
 
-    private handleTrack(event: RTCTrackEvent): void {
-        log.webrtc('handleTrack', event);
-        this.handleTrackSource(event);
-        //if (!this.mediaStream)
-        //    this.mediaStream = new MediaStream();
-        //const tracks = this.mediaStream.getTracks();
-        //if (!tracks.some(track => track.id === event.track.id)) {
-        //    this.mediaStream.addTrack(event.track);
-        //}
+    private async handleTrack(event: RTCTrackEvent) {
+        log.webrtc('handleTrack', event.track.kind, event);
+        const receiver = event.receiver;
+        const stats = await receiver.getStats();
+        stats.forEach(report => {
+            console.log("handleTrack:", report);
+        });
+
+        if (!this.mediaStream)
+            this.mediaStream = new MediaStream();
+        const tracks = this.mediaStream.getTracks();
+        if (!tracks.some(track => track.id === event.track.id)) {
+            this.mediaStream.addTrack(event.track);
+        }
         if (this.onTrack) {
             this.onTrack(event);
         }
-    }
-
-    private handleTrackSource(event: RTCTrackEvent): void {
-        log.webrtc('handleTrackSource', event.track.kind, event, this.peerConnection.remoteDescription);
-
-        const sdp = this.peerConnection.remoteDescription?.sdp;
-        if (!sdp) return;
-
-        const mimeType = this.getMimeTypeFromSDP(sdp, event.track.kind);
-        console.log(`Detected mimeType: ${mimeType} --- ${sdp}`);
-
-        const params = event.receiver?.getParameters()
-        console.log(`Parameter --- ${params}`);
-
-        if (event.track.getCapabilities()) {
-            console.log("Capabilities:", event.track.getCapabilities());
-        }
-        if (event.track.getSettings()) {
-            console.log("Settings:", event.track.getSettings());
-        }
-
-        if (!this.mediaSource) {
-            this.mediaSource = new MediaSource();
-            this.mediaSource.addEventListener("sourceopen", async () => {
-                console.log("MediaSource Opened", this.mediaSource?.readyState);
-                if (this.mediaSource?.readyState !== "open")
-                    return;
-
-                //console.log(`MIME type: ${mimeType}`);
-                //const buffer = this.mediaSource.addSourceBuffer(mimeType);
-            });
-        }
-    }
-
-    private getMimeTypeFromSDP(sdp: string, kind: string): string | null {
-        const lines = sdp.split("\n");
-
-        for (const line of lines) {
-            if (line.startsWith("m=") && line.includes(kind)) {
-                const codecLine = lines.find(l => l.startsWith("a=rtpmap"));
-                if (!codecLine) return null;
-
-                const codecInfo = codecLine.split(" ")[1]; // 例如 `96 VP8/90000`
-                const codecName = codecInfo.split("/")[0]; // 提取 `VP8`
-
-                if (kind === "video") return `video/${codecName.toLowerCase()}`;
-                if (kind === "audio") return `audio/${codecName.toLowerCase()}`;
-            }
-        }
-        return null;
     }
 
     private handleResponse(method: string, http: Response | { ok: boolean; url: string }, _req: any, rsp: any): void {
@@ -176,33 +157,8 @@ export class WebRTCConnection {
     private stopFetchCandidates(): void {
         if (this.fetchCandidatesTimer) {
             clearInterval(this.fetchCandidatesTimer);
-            this.fetchCandidatesTimer = null;
+            this.fetchCandidatesTimer = undefined;
             log.webrtc('stop fetchCandidatesTimer', this.connID);
-        }
-    }
-
-    public async createOffer(hasVideo: boolean, hasAudio: boolean): Promise<void> {
-        if (hasVideo) this.peerConnection.addTransceiver('video', { direction: 'sendrecv' });
-        if (hasAudio) this.peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
-
-        try {
-            const desc = await this.peerConnection.createOffer();
-            await this.peerConnection.setLocalDescription(desc);
-
-            const url = this.getUrl('offer', { connid: this.connID });
-            const body = {
-                streamURLs: [
-                    '/opt/app/gweb/tests/play-from-disk/output.ivf',
-                    '/opt/app/gweb/tests/play-from-disk/output.ogg',
-                ],
-                preferNetwork: 'udp',
-                peerBindPort: false,
-                iceServerURLs: this.iceServers[0].urls,
-                description: btoa(JSON.stringify(desc)),
-            };
-            this.request('POST', url, { body });
-        } catch (error) {
-            log.webrtc(error);
         }
     }
 
