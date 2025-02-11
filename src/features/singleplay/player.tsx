@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWebRTCState } from "@/webrtc/context";
 import { useTask } from "./state";
 import { Badge } from "@/components/ui/badge";
+import { useWebRTCState } from "@/webrtc/state";
 
 export function MediaPlayer() {
   const task = useTask();

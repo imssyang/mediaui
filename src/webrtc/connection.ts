@@ -1,5 +1,90 @@
 import { log } from '@/lib/log';
 
+export class WebRTCStreamStats {
+    isRemote: boolean;
+    isOutput: boolean;
+    transportId: string;
+    boundRtpId: string;
+    codecId: string;
+    trackId: string;
+    kind: string;
+    ssrc: number;
+    channels?: number;
+    clockRate?: number;
+    mimeType?: string;
+    payloadType?: number;
+    sdpFmtpLine?: string;
+
+    constructor(stat: any) {
+        if (!["inbound-rtp", "outbound-rtp", "remote-inbound-rtp", "remote-outbound-rtp"].includes(stat.type))
+            throw new Error(`invalid params: ${stat}`);
+
+        this.isRemote = ["inbound-rtp", "outbound-rtp"].includes(stat.type) ? false : true;
+        this.isOutput = stat.type == "inbound-rtp" ? false : true;
+        this.boundRtpId = stat.id;
+        this.kind = stat.kind;
+        this.ssrc = stat.ssrc;
+        this.transportId = stat?.transportId;
+        this.codecId = stat?.codecId;
+        this.trackId = stat?.trackIdentifier;
+    }
+
+    updateBound(stat: any) {
+        if (stat.id != this.boundRtpId)
+            return;
+
+        this.codecId = stat?.codecId;
+        this.trackId = stat?.trackIdentifier;
+    }
+
+    updateCodec(stat: any) {
+        if (stat.id != this.codecId)
+            return;
+
+        this.channels = stat?.channels;
+        this.clockRate = stat?.clockRate;
+        this.mimeType = stat?.mimeType;
+        this.payloadType = stat?.payloadType;
+        this.sdpFmtpLine = stat?.sdpFmtpLine;
+    }
+}
+
+export class WebRTCConnectionStats {
+    private updateTimer?: NodeJS.Timeout;
+    private peerConnection: RTCPeerConnection;
+    streams: WebRTCStreamStats[] = [];
+
+    constructor(pc: RTCPeerConnection) {
+        this.peerConnection = pc;
+        this.updateTimer = setInterval(async () => this.update(), 1000);
+    }
+
+    public close() {
+        if (this.updateTimer) {
+            clearInterval(this.updateTimer);
+            this.updateTimer = undefined;
+        }
+    }
+
+    async update() {
+        const stats = await this.peerConnection.getStats();
+        stats.forEach(report => {
+            if (["inbound-rtp", "outbound-rtp", "remote-inbound-rtp", "remote-outbound-rtp"].includes(report.type)) {
+                const stream = this.streams.find(stat => stat?.boundRtpId == report.id);
+                if (stream) {
+                    stream.updateBound(report);
+                } else {
+                    this.streams.push(new WebRTCStreamStats(report));
+                }
+                log.webrtc(report, this.streams);
+            } else if (["codec"].includes(report.type)) {
+                this.streams.filter(stat => stat?.codecId == report.id).map(
+                    stream => stream.updateCodec(report));
+            }
+        });
+    }
+}
+
 export class WebRTCConnection {
     private urlGroup: string;
     private iceServers: RTCIceServer[];
@@ -7,6 +92,7 @@ export class WebRTCConnection {
     private fetchCandidatesDisable = false;
     public connID: string;
     public peerConnection: RTCPeerConnection;
+    public stats: WebRTCConnectionStats;
     public mediaStream: MediaStream | undefined;
     public mediaRecorder: MediaRecorder | undefined;
     public mediaSource: MediaSource | undefined;
@@ -27,6 +113,7 @@ export class WebRTCConnection {
         this.peerConnection = new RTCPeerConnection({
             iceServers: this.iceServers ? this.iceServers : [],
         });
+        this.stats = new WebRTCConnectionStats(this.peerConnection);
         this.peerConnection.oniceconnectionstatechange = async (event) => await this.handleIceConnectionStateChange(event);
         this.peerConnection.onicecandidate = async (event) => await this.handleIceCandidate(event);
         this.peerConnection.ontrack = async (event) => await this.handleTrack(event);
@@ -60,6 +147,7 @@ export class WebRTCConnection {
 
     public close() {
         log.webrtc('close', this.connID)
+        this.stats.close();
         this.peerConnection.close()
         if (this.onClose) {
             this.onClose();
@@ -68,16 +156,13 @@ export class WebRTCConnection {
 
     private async handleIceConnectionStateChange(event: Event) {
         log.webrtc('handleIceConnectionStateChange', this.peerConnection.iceConnectionState);
-        const stats = await this.peerConnection.getStats();
-        stats.forEach(report => {
-            console.log("handleIceConnectionStateChange", this.peerConnection.iceConnectionState, report);
-        });
-
         const state = this.peerConnection.iceConnectionState;
         if (state === 'checking') {
             this.startFetchCandidates();
         } else if (["closed", "completed", "connected", "disconnected", "failed"].includes(state)) {
             this.stopFetchCandidates();
+            if (state == "connected")
+                this.stats.update();
         }
 
         if (this.onIceConnectionStateChange) {
@@ -86,13 +171,8 @@ export class WebRTCConnection {
     }
 
     private async handleIceCandidate(event: RTCPeerConnectionIceEvent) {
-        const stats = await this.peerConnection.getStats();
-        stats.forEach(report => {
-            console.log("handleIceCandidate:", report);
-        });
-
         if (event.candidate) {
-            log.webrtc('onicecandidate', event.candidate);
+            log.webrtc('handleIceCandidate', event.candidate);
             const url = this.getUrl('candidate', { connid: this.connID });
             this.request('POST', url, { body: { iceCandidates: [event.candidate] } });
         }
@@ -104,12 +184,7 @@ export class WebRTCConnection {
 
     private async handleTrack(event: RTCTrackEvent) {
         log.webrtc('handleTrack', event.track.kind, event);
-        const receiver = event.receiver;
-        const stats = await receiver.getStats();
-        stats.forEach(report => {
-            console.log("handleTrack:", report);
-        });
-
+        this.stats.update();
         if (!this.mediaStream)
             this.mediaStream = new MediaStream();
         const tracks = this.mediaStream.getTracks();
