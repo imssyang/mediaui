@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { WebRTCConnectionStats } from "./connection";
+import { WebRTCStreamStats } from "./connection";
 import { useWebRTC } from "./context";
 import { WebRTCManager } from "./manager";
 
 export class WebRTCState {
     manager: WebRTCManager;
     connID: string;
-    connectionState: RTCIceConnectionState = 'new';
-    stats?: WebRTCConnectionStats;
+    connState: RTCIceConnectionState = 'new';
+    streamStats?: WebRTCStreamStats[];
     mediaStream?: MediaStream;
 
     constructor(manager: WebRTCManager, connID: string) {
@@ -17,14 +17,15 @@ export class WebRTCState {
     }
 
     equal(state: WebRTCState) {
-        return this.connectionState === state.connectionState &&
-            this.mediaStream?.id === state.mediaStream?.id;
+        return this.connState === state.connState &&
+            this.mediaStream?.id === state.mediaStream?.id &&
+            JSON.stringify(this.streamStats) === JSON.stringify(state.streamStats);
     }
 
     update() {
         const conn = this.manager.getConnection(this.connID);
-        this.connectionState = conn?.peerConnection.iceConnectionState ?? "new";
-        this.stats = conn?.stats;
+        this.connState = conn?.peerConnection.iceConnectionState ?? "new";
+        this.streamStats = conn?.getStreamStats();
         this.mediaStream = conn?.mediaStream;
     }
 };

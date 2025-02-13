@@ -13,11 +13,7 @@ export function LayoutPanel() {
       className="rounded-lg md:min-w-[450px]"
     >
       <ResizablePanel defaultSize={100}>
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={80}>
-            <MediaPlayer />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <MediaPlayer />
       </ResizablePanel>
     </ResizablePanelGroup>
   )

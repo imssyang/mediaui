@@ -40,9 +40,7 @@ export class WebRTCManager {
       this.config.iceServers,
       connID
     );
-    conn.onIceConnectionStateChange = () => this.notifySubscribers(connID);
-    conn.onTrack = () => this.notifySubscribers(connID);
-    conn.onClose = () => this.notifySubscribers(connID);
+    conn.onState = () => this.notifySubscribers(connID);
     this.connections.set(connID, conn);
     return conn;
   }
