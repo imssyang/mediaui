@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Unlink } from "lucide-react";
 import { log } from "@/lib/log"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast"
 import { useWebRTC } from "@/webrtc/context";
-import { useTask, useDispatch } from "./state";
+import { useWebRTCState } from "@/webrtc/state";
+import { useTask, useTaskDispatch } from "./task";
 
 type InputField = {
   value: string;
@@ -66,11 +67,35 @@ const SelectInput: React.FC<SelectInputProps> = ({
 function MenuInput() {
   const webrtc = useWebRTC();
   const task = useTask();
-  const dispatch = useDispatch();
+  const state = useWebRTCState(task.connID);
+  const taskDispatch = useTaskDispatch();
   const { toast } = useToast();
   const [input, setInput] = useState<InputField>(
     { value: "", type: "text", disabled: false }
   );
+
+  const createConnection = async (urls: string[]) => {
+    const conn = webrtc.createConnection();
+    await conn.createOffer(true, true);
+
+    taskDispatch({
+      type: 'addConnection',
+      connID: conn.connID,
+      urls: urls,
+    });
+    setInput({ ...input, disabled: true });
+    log.react('addConnection', conn.connID, urls);
+  };
+
+  const closeConnection = async () => {
+    webrtc.closeConnection(task.connID);
+    taskDispatch({
+        type: 'delConnection',
+        connID: task.connID,
+    });
+    setInput({ ...input, disabled: false });
+    log.react('delConnection', task.connID);
+  };
 
   const handleChange = (value: string) => {
     setInput((prev) => ({ ...prev, value }));
@@ -95,29 +120,19 @@ function MenuInput() {
     }
 
     if (!input.disabled) {
-      const conn = webrtc.createConnection();
-      await conn.createOffer(true, true);
-
-      dispatch({
-        type: 'addConnection',
-        connID: conn.connID,
-        urls: urls,
-      });
-      log.react('addConnection', conn.connID, urls);
+      await createConnection(urls);
     } else {
       if (task.connID.length > 0) {
-        const conn = webrtc.getConnection(task.connID);
-        conn?.close();
-        dispatch({
-          type: 'delConnection',
-          connID: task.connID,
-        });
-        log.react('delConnection', task.connID);
+        await closeConnection();
       }
     }
-
-    setInput({ ...input, disabled: !input.disabled });
   };
+
+  useEffect(() => {
+    if (["closed", "disconnected", "failed"].includes(state.connState)) {
+      closeConnection();
+    }
+  }, [state])
 
   return (
     <>

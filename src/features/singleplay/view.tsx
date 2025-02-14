@@ -1,6 +1,6 @@
 import { MenuPanel } from './menu'
 import { LayoutPanel } from './layout'
-import { StateProvider } from "./state"
+import { StateProvider } from "./task"
 
 function SinglePlayFeature() {
   return (

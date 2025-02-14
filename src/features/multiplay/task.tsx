@@ -15,16 +15,10 @@ class Task {
       this.urls = urls;
     }
 
-    clone(fields: Partial<Task>): Task {
-        return new Task(
-            fields.connID ?? this.connID,
-            fields.urls ?? this.urls
-        );
-    }
-
     equalURLs(urls: string[]): boolean {
-        const urlSet = new Set(urls);
-        return this.urls.length === urls.length && this.urls.every(item => urlSet.has(item));
+        return this.urls.length === urls.length
+        && new Set(this.urls).size === new Set(urls).size
+        && [...new Set(this.urls)].every(item => new Set(urls).has(item));
     }
 }
 
@@ -32,18 +26,16 @@ type Action =
     | { type: 'addConnection'; connID: string; urls: string[] }
     | { type: 'delConnection'; connID: string };
 
-function taskReducer(task: Task, action: Action): Task {
+function taskReducer(tasks: Task[], action: Action): Task[] {
     switch (action.type) {
-        case 'addConnection':
-            return task.clone({ 
-                connID: action.connID,
-                urls: action.urls,
-            });
+        case 'addConnection': {
+            return [
+                ...tasks,
+                new Task(action.connID, action.urls),
+            ];
+        }
         case 'delConnection': {
-            return task.clone({ 
-                connID: "",
-                urls: [],
-            });
+            return tasks.filter((t) => t.connID !== action.connID);
         }
         default: {
             throw new Error('Unknown action: ' + (action as any).type);
@@ -51,7 +43,7 @@ function taskReducer(task: Task, action: Action): Task {
     }
 }
 
-const TaskContext = createContext<Task | null>(null);
+const TasksContext = createContext<Task[] | null>(null);
 
 const DispatchContext = createContext<Dispatch<Action> | null>(null);
 
@@ -62,29 +54,29 @@ type StateProviderProps = {
 export function StateProvider({
     children,
 }: StateProviderProps) {
-    const [task, dispatch] = useReducer(taskReducer, new Task("", []));
+    const [task, dispatch] = useReducer(taskReducer, []);
 
     return (
-        <TaskContext.Provider value={task}>
+        <TasksContext.Provider value={task}>
             <DispatchContext.Provider value={dispatch}>
                 {children}
             </DispatchContext.Provider>
-        </TaskContext.Provider>
+        </TasksContext.Provider>
     );
 };
 
-export function useTask() {
-    const context = useContext(TaskContext);
+export function useTasks() {
+    const context = useContext(TasksContext);
     if (!context) {
-        throw new Error("useTask must used inside of StateProvider");
+        throw new Error("useTasks must used inside of StateProvider");
     }
     return context;
 }
 
-export function useDispatch() {
+export function useTaskDispatch() {
     const context = useContext(DispatchContext);
     if (!context) {
-        throw new Error("useDispatch must used inside of StateProvider");
+        throw new Error("useTaskDispatch must used inside of StateProvider");
     }
     return context;
 }
