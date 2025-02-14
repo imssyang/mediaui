@@ -60,7 +60,7 @@ export class WebRTCConnectionStatsTask {
 
     startTimer(intervalMS: number) {
         if (!this.updateTimer) {
-            log.webrtc('IceCandidate:startTimer', this.connection.connID);
+            log.webrtc(this.connection.connID, 'StatsTask:startTimer');
             this.updateTimer = setInterval(async () => {
                 this.update();
             }, intervalMS);
@@ -71,6 +71,7 @@ export class WebRTCConnectionStatsTask {
         if (this.updateTimer) {
             clearInterval(this.updateTimer);
             this.updateTimer = undefined;
+            log.webrtc(this.connection.connID, 'StatsTask:stopTimer');
         }
     }
 
@@ -84,12 +85,12 @@ export class WebRTCConnectionStatsTask {
                 } else {
                     this.streams.push(new WebRTCStreamStats(report));
                 }
-                log.webrtc(report, this.streams);
             } else if (["codec"].includes(report.type)) {
                 this.streams.filter(stat => stat?.codecId == report.id).map(
                     stream => stream.updateCodec(report));
             }
         });
+        this.connection.notifyState("stats");
     }
 }
 
@@ -104,7 +105,7 @@ class WebRTCIceCandidateTask {
 
     startTimer(intervalMS: number, timeoutMS: number) {
         if (!this.fetchTimer) {
-            log.webrtc('IceCandidate:startTimer', this.connection.connID);
+            log.webrtc(this.connection.connID, 'IceCandidateTask:startTimer');
             this.fetchTimer = setInterval(async () => {
                 if (this.disableQuery)
                     return;
@@ -120,7 +121,7 @@ class WebRTCIceCandidateTask {
         if (this.fetchTimer) {
             clearInterval(this.fetchTimer);
             this.fetchTimer = undefined;
-            log.webrtc('IceCandidate:stopTimer', this.connection.connID);
+            log.webrtc(this.connection.connID, 'IceCandidateTask:stopTimer');
         }
     }
 }
@@ -155,7 +156,6 @@ export class WebRTCConnection {
         this.peerConnection.oniceconnectionstatechange = async (event) => await this.handleIceConnectionStateChange(event);
         this.peerConnection.onicecandidate = async (event) => await this.handleIceCandidate(event);
         this.peerConnection.ontrack = async (event) => await this.handleTrack(event);
-        log.webrtc('new', connID)
     }
 
     public async createOffer(hasVideo: boolean, hasAudio: boolean): Promise<boolean> {
@@ -188,7 +188,7 @@ export class WebRTCConnection {
             ).catch(log.webrtc);
             return true;
         } catch (error) {
-            log.webrtc(error);
+            log.webrtc(this.connID, error);
             return false;
         }
     }
@@ -201,15 +201,13 @@ export class WebRTCConnection {
 
         const data = await response.json();
         data.iceCandidates.forEach((candidate: RTCIceCandidateInit) => {
+            log.webrtc(this.connID, "remoteIceCandidates", candidate);
             this.peerConnection.addIceCandidate(candidate).catch(log.webrtc);
         });
-        if (data.iceGatheringState === 'complete')
-            this.iceCandidateTask.stopTimer();
         return true;
     }
 
     public close() {
-        log.webrtc('close', this.connID)
         this.iceCandidateTask.stopTimer();
         this.statsTask.stopTimer();
         this.peerConnection.close()
@@ -217,21 +215,23 @@ export class WebRTCConnection {
     }
 
     private async handleIceConnectionStateChange(event: Event) {
-        log.webrtc('IceConnectionStateChange', this.peerConnection.iceConnectionState);
+        log.webrtc(this.connID, 'IceConnectionStateChange', this.peerConnection.iceConnectionState);
         const state = this.peerConnection.iceConnectionState;
         if (state === 'checking') {
             this.iceCandidateTask.startTimer(100, this.timeoutMS);
         } else if (["closed", "completed", "connected", "disconnected", "failed"].includes(state)) {
             this.iceCandidateTask.stopTimer();
-            if (state == "connected")
+            if (state === "connected")
                 this.statsTask.startTimer(1000);
+            else if (["closed", "disconnected", "failed"].includes(state))
+                this.close();
         }
         this.notifyState(event);
     }
 
     private async handleIceCandidate(event: RTCPeerConnectionIceEvent) {
         if (event.candidate) {
-            log.webrtc('handleIceCandidate', event.candidate);
+            log.webrtc(this.connID, 'IceCandidate', event.candidate);
             const url = this.getUrl('candidate', { connid: this.connID });
             this.request('POST', url, { body: { iceCandidates: [event.candidate] } });
         }
@@ -239,7 +239,7 @@ export class WebRTCConnection {
     }
 
     private async handleTrack(event: RTCTrackEvent) {
-        log.webrtc('handleTrack', event.track.kind, event);
+        log.webrtc(this.connID, 'Track', event.track.kind, event);
         await this.statsTask.update();
         if (!this.mediaStream)
             this.mediaStream = new MediaStream();
@@ -270,7 +270,7 @@ export class WebRTCConnection {
         return this.statsTask.streams;
     }
 
-    private notifyState(event: any) {
+    public notifyState(event: any) {
         if (this.onState)
             this.onState(event);
     }

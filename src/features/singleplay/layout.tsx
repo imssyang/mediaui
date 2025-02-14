@@ -9,10 +9,10 @@ import { MediaPlayer } from "./player";
 export function LayoutPanel() {
   return (
     <ResizablePanelGroup
-      direction="vertical"
+      direction="horizontal"
       className="rounded-lg md:min-w-[450px]"
     >
-      <ResizablePanel defaultSize={100}>
+      <ResizablePanel>
         <MediaPlayer />
       </ResizablePanel>
     </ResizablePanelGroup>

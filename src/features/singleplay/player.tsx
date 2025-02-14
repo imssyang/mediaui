@@ -2,18 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTask } from "./state";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { useWebRTCState } from "@/webrtc/state";
 import { log } from "@/lib/log";
+import { WebRTCStateTable } from "./webrtc";
 
 export function MediaPlayer() {
   const task = useTask();
@@ -31,46 +22,7 @@ export function MediaPlayer() {
   return (
     <div className="px-4">
       <video ref={videoRef} autoPlay playsInline controls className="w-full h-auto" />
-      <Badge variant="outline">{state.connState}</Badge>
-      <Table>
-        <TableCaption>WebRTCStats</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>isRemote</TableHead>
-            <TableHead>isOutput</TableHead>
-            <TableHead>transportId</TableHead>
-            <TableHead>boundRtpId</TableHead>
-            <TableHead>codecId</TableHead>
-            <TableHead>trackId</TableHead>
-            <TableHead>kind</TableHead>
-            <TableHead>ssrc</TableHead>
-            <TableHead>channels</TableHead>
-            <TableHead>clockRate</TableHead>
-            <TableHead>mimeType</TableHead>
-            <TableHead>payloadType</TableHead>
-            <TableHead>sdpFmtpLine</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {state.streamStats?.map((stream) => (
-            <TableRow key={stream.boundRtpId}>
-              <TableCell>{stream.isRemote}</TableCell>
-              <TableCell>{stream.isOutput}</TableCell>
-              <TableCell>{stream.transportId}</TableCell>
-              <TableCell>{stream.boundRtpId}</TableCell>
-              <TableCell>{stream.codecId}</TableCell>
-              <TableCell>{stream.trackId}</TableCell>
-              <TableCell>{stream.kind}</TableCell>
-              <TableCell>{stream.ssrc}</TableCell>
-              <TableCell>{stream.channels}</TableCell>
-              <TableCell>{stream.clockRate}</TableCell>
-              <TableCell>{stream.mimeType}</TableCell>
-              <TableCell>{stream.payloadType}</TableCell>
-              <TableCell>{stream.sdpFmtpLine}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <WebRTCStateTable />
     </div>
   );
 }

@@ -7,7 +7,7 @@ export class WebRTCState {
     manager: WebRTCManager;
     connID: string;
     connState: RTCIceConnectionState = 'new';
-    streamStats?: WebRTCStreamStats[];
+    streamStats: WebRTCStreamStats[] = [];
     mediaStream?: MediaStream;
 
     constructor(manager: WebRTCManager, connID: string) {
@@ -19,14 +19,20 @@ export class WebRTCState {
     equal(state: WebRTCState) {
         return this.connState === state.connState &&
             this.mediaStream?.id === state.mediaStream?.id &&
-            JSON.stringify(this.streamStats) === JSON.stringify(state.streamStats);
+            this.streamStats.length === state.streamStats.length &&
+            this.streamStats.every((stat, index) => {
+                JSON.stringify(stat) == JSON.stringify(state.streamStats[index]);
+            });
     }
 
     update() {
         const conn = this.manager.getConnection(this.connID);
-        this.connState = conn?.peerConnection.iceConnectionState ?? "new";
-        this.streamStats = conn?.getStreamStats();
-        this.mediaStream = conn?.mediaStream;
+        if (!conn)
+            return;
+
+        this.connState = conn.peerConnection.iceConnectionState;
+        this.streamStats = conn.getStreamStats();
+        this.mediaStream = conn.mediaStream;
     }
 };
 
@@ -44,7 +50,7 @@ export const useWebRTCState = (connID: string): WebRTCState => {
         return () => {
             unsubscribe();
         };
-    }, [connID, manager]);
+    }, [manager, connID]);
 
     return state;
 };
@@ -59,8 +65,7 @@ export const useWebRTCState2 = (connID: string) => {
 
     const getSnapshot = () => {
         const newState = new WebRTCState(manager, connID);
-
-        if (lastRef.current.equal(newState)) {
+        if (newState.equal(lastRef.current)) {
             return lastRef.current;
         }
 
