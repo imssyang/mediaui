@@ -53,17 +53,19 @@ export class WebRTCManager {
     return Array.from(this.connections.values());
   }
 
-  public closeConnection(connID: string): void {
+  public closeConnection(connID: string) {
     const conn = this.connections.get(connID);
     if (conn) {
-      conn.close();
+      const colseFn = async () => await conn.close();
+      colseFn();
       this.connections.delete(connID);
     }
   }
 
-  public closeAllConnections(): void {
+  public closeAllConnections() {
     for (const conn of this.connections.values()) {
-      conn.close();
+      const colseFn = async () => await conn.close();
+      colseFn();
     }
     this.connections.clear();
   }

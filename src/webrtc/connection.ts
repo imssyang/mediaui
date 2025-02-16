@@ -207,11 +207,17 @@ export class WebRTCConnection {
         return true;
     }
 
-    public close() {
+    public async close(): Promise<boolean> {
+        const url = this.getUrl('connection', { connid: this.connID });
+        const response = await this.request('DELETE', url, { timeout: this.timeoutMS });
+        if (!response.ok)
+            return false;
+
         this.iceCandidateTask.stopTimer();
         this.statsTask.stopTimer();
         this.peerConnection.close()
         this.notifyState("close");
+        return true;
     }
 
     private async handleIceConnectionStateChange(event: Event) {
@@ -224,7 +230,7 @@ export class WebRTCConnection {
             if (state === "connected")
                 this.statsTask.startTimer(1000);
             else if (["closed", "disconnected", "failed"].includes(state))
-                this.close();
+                await this.close();
         }
         this.notifyState(event);
     }
