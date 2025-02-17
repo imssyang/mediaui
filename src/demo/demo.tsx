@@ -5,10 +5,11 @@ import { UIDemo } from "@/demo/ui/ui"
 export function Demo() {
   return (
     <>
-        <GridStackDemo />
+      <GridStackDemo />
+      <div style={{ height: "300px" }}>
         <ReflexDemo />
-        <UIDemo />
+      </div>
+      <UIDemo />
     </>
   )
 }
-
